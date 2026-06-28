@@ -1,0 +1,110 @@
+from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy.orm import Session
+
+from app.dependencies import get_db
+from app.models.building import Building
+from app.schemas.building_schema import BuildingCreate, BuildingResponse
+
+router = APIRouter(
+    prefix="/buildings",
+    tags=["Buildings"]
+)
+
+
+@router.post("/", response_model=BuildingResponse)
+def create_building(
+    building: BuildingCreate,
+    db: Session = Depends(get_db)
+):
+
+    existing = db.query(Building).filter(
+        Building.code == building.code
+    ).first()
+
+    if existing:
+        raise HTTPException(
+            status_code=400,
+            detail="Building already exists"
+        )
+
+    db_building = Building(**building.model_dump())
+
+    db.add(db_building)
+    db.commit()
+    db.refresh(db_building)
+
+    return db_building
+
+
+@router.get("/", response_model=list[BuildingResponse])
+def get_buildings(db: Session = Depends(get_db)):
+    return db.query(Building).all()
+
+
+@router.get("/{building_id}", response_model=BuildingResponse)
+def get_building(
+    building_id: int,
+    db: Session = Depends(get_db)
+):
+
+    building = db.query(Building).filter(
+        Building.id == building_id
+    ).first()
+
+    if building is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Building not found"
+        )
+
+    return building
+
+
+@router.put("/{building_id}", response_model=BuildingResponse)
+def update_building(
+    building_id: int,
+    building_data: BuildingCreate,
+    db: Session = Depends(get_db)
+):
+
+    building = db.query(Building).filter(
+        Building.id == building_id
+    ).first()
+
+    if building is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Building not found"
+        )
+
+    for key, value in building_data.model_dump().items():
+        setattr(building, key, value)
+
+    db.commit()
+    db.refresh(building)
+
+    return building
+
+
+@router.delete("/{building_id}")
+def delete_building(
+    building_id: int,
+    db: Session = Depends(get_db)
+):
+
+    building = db.query(Building).filter(
+        Building.id == building_id
+    ).first()
+
+    if building is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Building not found"
+        )
+
+    db.delete(building)
+    db.commit()
+
+    return {
+        "message": "Building deleted successfully"
+    }
