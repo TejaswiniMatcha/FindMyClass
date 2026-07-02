@@ -15,7 +15,7 @@ from app.routers import (
     department_router,
     section_router,
     search_router,
-    autocomplete_router
+    
 )
 
 
@@ -62,7 +62,7 @@ app.include_router(department_router.router)
 app.include_router(faculty_router.router)
 app.include_router(section_router.router)
 app.include_router(search_router.router)
-app.include_router(autocomplete_router.router)
+
 
 
 # Custom Swagger UI

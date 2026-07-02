@@ -16,9 +16,11 @@ class BuildingData(TypedDict):
     code: str
     slug: str
     short_name: str
+    icon: str
     description: str
     image: str
     floors: int
+    highlights: list[str]
 
 
 class DepartmentData(TypedDict):
@@ -27,7 +29,7 @@ class DepartmentData(TypedDict):
 
 
 class RoomData(TypedDict):
-    room_no: int
+    room_no: str
     floor: int
     building: str
 
@@ -37,30 +39,151 @@ class RoomData(TypedDict):
 # ==========================================================
 
 BUILDINGS: List[BuildingData] = [
+
     {
         "name": "A Block",
         "code": "A",
         "slug": "a-block",
         "short_name": "A",
-        "description": "Main academic block",
+        "icon": "A",
+        "description": "Main academic block with lecture halls and faculty offices.",
         "image": "blockA.jpeg",
         "floors": 4,
+        "highlights": [
+            "Smart Classrooms",
+            "Seminar Rooms",
+            "Faculty Cabins"
+        ]
     },
+
     {
         "name": "B Block",
         "code": "B",
         "slug": "b-block",
         "short_name": "B",
-        "description": "Engineering departments",
+        "icon": "B",
+        "description": "Engineering departments and laboratory facilities.",
         "image": "blockB.jpeg",
         "floors": 4,
+        "highlights": [
+            "CSE Department",
+            "Project Labs",
+            "Discussion Rooms"
+        ]
     },
+
+    {
+        "name": "C Block",
+        "code": "C",
+        "slug": "c-block",
+        "short_name": "C",
+        "icon": "C",
+        "description": "Administrative offices and student support services.",
+        "image": "blockC.jpeg",
+        "floors": 4,
+        "highlights": [
+            "Admissions",
+            "Examination Cell",
+            "Student Services"
+        ]
+    },
+
+    {
+        "name": "D Block",
+        "code": "D",
+        "slug": "d-block",
+        "short_name": "D",
+        "icon": "D",
+        "description": "Research and innovation block with workshops.",
+        "image": "blockD.jpeg",
+        "floors": 4,
+        "highlights": [
+            "Innovation Lab",
+            "Workshop",
+            "Design Studio"
+        ]
+    },
+
+    {
+        "name": "Siemens Block",
+        "code": "SB",
+        "slug": "siemens-block",
+        "short_name": "SB",
+        "icon": "SB",
+        "description": "Industry-oriented laboratories and automation training.",
+        "image": "Siemensblock.jpeg",
+        "floors": 5,
+        "highlights": [
+            "Automation Lab",
+            "PLC Training",
+            "Simulation Center"
+        ]
+    },
+
+    {
+        "name": "Freshman Block",
+        "code": "FB",
+        "slug": "freshman-block",
+        "short_name": "FB",
+        "icon": "FB",
+        "description": "Dedicated classrooms and mentoring spaces for first-year students.",
+        "image": "Freshmanblock.jpeg",
+        "floors": 5,
+        "highlights": [
+            "Foundation Courses",
+            "Mentoring Rooms",
+            "Study Area"
+        ]
+    },
+
+    {
+        "name": "Central Block",
+        "code": "CB",
+        "slug": "central-block",
+        "short_name": "CB",
+        "icon": "CB",
+        "description": "Campus administration and common facilities.",
+        "image": "Centralblock.jpeg",
+        "floors": 4,
+        "highlights": [
+            "Principal Office",
+            "Accounts",
+            "Conference Hall"
+        ]
+    },
+
+    {
+        "name": "Open Air Theatre",
+        "code": "OAT",
+        "slug": "oat",
+        "short_name": "OAT",
+        "icon": "OAT",
+        "description": "Venue for cultural events and large student gatherings.",
+        "image": "OAT.jpeg",
+        "floors": 0,
+        "highlights": [
+            "Cultural Events",
+            "Freshers Day",
+            "Annual Fest"
+        ]
+    }
+
 ]
 
 
 DEPARTMENTS: List[DepartmentData] = [
     {"name": "Computer Science and Engineering", "code": "CSE"},
-    {"name": "Information Technology", "code": "IT"},
+                {"name": "Electronics and Communication Engineering", "code": "ECE"},
+                {"name": "Mechanical Engineering", "code": "MECH"},
+                {"name": "Civil Engineering", "code": "CIVIL"},
+                {"name": "Cybersecurity, IOT and Blockchain technology", "code": "CIC"},
+                {"name": "Computer Science and IOT", "code": "CSO"},
+                {"name": "Electrical and Electronics Engineering", "code": "EEE"},
+                {"name": "Information Technology", "code": "IT"},
+                {"name": "Artificial Intelligence and Machine Learning", "code": "AIM"},
+                {"name": "Artificial Intelligence and Data Science", "code": "AID"},
+                {"name": "Computer Systems and Machine Learning", "code": "CSM"},
+                {"name": "Master of Business Administration", "code": "MBA"},
 ]
 
 
@@ -72,15 +195,29 @@ def add_standard_block_rooms(building_name: str) -> None:
         start = (floor + 1) * 100
         for room in range(1, 7):
             ROOMS.append({
-                "room_no": start + room,
+                "room_no": str(start + room),
+                "floor": floor,
+                "building": building_name
+            })
+def add_siemens_freshman_rooms(building_name: str) -> None:
+    for floor in range(5):
+        start = (floor + 1) * 100
+        for room in range(1, 20):
+            ROOMS.append({
+                "room_no": str(start + room),
                 "floor": floor,
                 "building": building_name
             })
 
 
+
 add_standard_block_rooms("A Block")
 add_standard_block_rooms("B Block")
-
+add_standard_block_rooms("C Block")
+add_standard_block_rooms("D Block")
+add_standard_block_rooms("Central Block")
+add_siemens_freshman_rooms("Siemens Block")
+add_siemens_freshman_rooms("Freshman Block")
 
 # ==========================================================
 # DB Helpers (TYPE SAFE)
@@ -124,7 +261,11 @@ def get_building(db: Session, name: str) -> Optional[Building]:
     ).first()
 
 
-def get_room(db: Session, room_no: int, building_id: int) -> Optional[Room]:
+def get_room(
+    db: Session,
+    room_no: str,
+    building_id: int
+) -> Optional[Room]:
     return db.query(Room).filter(
         Room.room_no == room_no,
         Room.building_id == building_id

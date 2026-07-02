@@ -1,4 +1,5 @@
-from sqlalchemy import Column, Integer, String
+from sqlalchemy import Column, Integer, String, Text
+from sqlalchemy.dialects.postgresql import ARRAY
 from sqlalchemy.orm import relationship
 
 from app.database import Base
@@ -9,13 +10,42 @@ class Building(Base):
 
     id = Column(Integer, primary_key=True, index=True)
 
-    name = Column(String, nullable=False, unique=True)
-    code = Column(String, nullable=False, unique=True)
-    slug = Column(String, nullable=False, unique=True)
+    # Basic Information
+    name = Column(String(100), nullable=False, unique=True)
+    code = Column(String(20), nullable=False, unique=True)
+    slug = Column(String(100), nullable=False, unique=True)
 
-    short_name = Column(String, nullable=False)
-    description = Column(String)
-    image = Column(String)
-    floors = Column(Integer)
+    # Display Information
+    short_name = Column(String(20), nullable=False)
+    icon = Column(String(20), nullable=False)
 
-    rooms = relationship("Room", back_populates="building")
+    # Description
+    description = Column(Text, nullable=False)
+
+    # Image filename stored in /static
+    image = Column(String(255), nullable=False)
+
+    # Building Information
+    floors = Column(Integer, nullable=False)
+
+    # Building Highlights
+    highlights = Column(
+        ARRAY(String),
+        nullable=False,
+        default=list
+    )
+
+    # Relationships
+    rooms = relationship(
+        "Room",
+        back_populates="building",
+        cascade="all, delete-orphan"
+    )
+
+    @property
+    def room_count(self) -> int:
+        """
+        Returns the number of rooms in the building.
+        Calculated dynamically from the relationship.
+        """
+        return len(self.rooms) if self.rooms else 0

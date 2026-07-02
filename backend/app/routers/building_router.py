@@ -3,7 +3,11 @@ from sqlalchemy.orm import Session
 
 from app.dependencies import get_db
 from app.models.building import Building
-from app.schemas.building_schema import BuildingCreate, BuildingResponse
+from app.schemas.building_schema import (
+    BuildingCreate,
+    BuildingUpdate,
+    BuildingResponse,
+)
 
 router = APIRouter(
     prefix="/buildings",
@@ -11,6 +15,9 @@ router = APIRouter(
 )
 
 
+# ---------------------------------------------------------
+# Create Building
+# ---------------------------------------------------------
 @router.post("/", response_model=BuildingResponse)
 def create_building(
     building: BuildingCreate,
@@ -36,20 +43,34 @@ def create_building(
     return db_building
 
 
+# ---------------------------------------------------------
+# Get All Buildings
+# ---------------------------------------------------------
 @router.get("/", response_model=list[BuildingResponse])
-def get_buildings(db: Session = Depends(get_db)):
-    return db.query(Building).all()
+def get_buildings(
+    db: Session = Depends(get_db)
+):
+    return (
+        db.query(Building)
+        .order_by(Building.name)
+        .all()
+    )
 
 
-@router.get("/{building_id}", response_model=BuildingResponse)
+# ---------------------------------------------------------
+# Get Building By Slug
+# ---------------------------------------------------------
+@router.get("/{slug}", response_model=BuildingResponse)
 def get_building(
-    building_id: int,
+    slug: str,
     db: Session = Depends(get_db)
 ):
 
-    building = db.query(Building).filter(
-        Building.id == building_id
-    ).first()
+    building = (
+        db.query(Building)
+        .filter(Building.slug == slug)
+        .first()
+    )
 
     if building is None:
         raise HTTPException(
@@ -60,16 +81,21 @@ def get_building(
     return building
 
 
+# ---------------------------------------------------------
+# Update Building
+# ---------------------------------------------------------
 @router.put("/{building_id}", response_model=BuildingResponse)
 def update_building(
     building_id: int,
-    building_data: BuildingCreate,
+    building_data: BuildingUpdate,
     db: Session = Depends(get_db)
 ):
 
-    building = db.query(Building).filter(
-        Building.id == building_id
-    ).first()
+    building = (
+        db.query(Building)
+        .filter(Building.id == building_id)
+        .first()
+    )
 
     if building is None:
         raise HTTPException(
@@ -86,15 +112,20 @@ def update_building(
     return building
 
 
+# ---------------------------------------------------------
+# Delete Building
+# ---------------------------------------------------------
 @router.delete("/{building_id}")
 def delete_building(
     building_id: int,
     db: Session = Depends(get_db)
 ):
 
-    building = db.query(Building).filter(
-        Building.id == building_id
-    ).first()
+    building = (
+        db.query(Building)
+        .filter(Building.id == building_id)
+        .first()
+    )
 
     if building is None:
         raise HTTPException(
