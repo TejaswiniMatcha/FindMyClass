@@ -6,6 +6,7 @@ from app.models.faculty import Faculty
 from app.schemas.faculty_schema import FacultyCreate, FacultyResponse
 from app.models.room import Room
 
+
 router = APIRouter(
     prefix="/faculties",
     tags=["Faculties"]
@@ -34,7 +35,15 @@ def create_faculty(
     db.commit()
     db.refresh(db_faculty)
 
-    return db_faculty
+    return (
+        db.query(Faculty)
+        .options(
+            joinedload(Faculty.department),
+            joinedload(Faculty.room).joinedload(Room.building)
+        )
+        .filter(Faculty.id == db_faculty.id)
+        .first()
+    )
 
 
 @router.get("/", response_model=list[FacultyResponse])
@@ -60,16 +69,20 @@ def get_faculty(
 ):
 
     faculty = (
-    db.query(Faculty)
-    .options(
-        joinedload(Faculty.department),
-        joinedload(Faculty.room).joinedload(Room.building)
+        db.query(Faculty)
+        .options(
+            joinedload(Faculty.department),
+            joinedload(Faculty.room).joinedload(Room.building)
+        )
+        .filter(Faculty.id == faculty_id)
+        .first()
     )
-    .filter(
-        Faculty.id == faculty_id
-    )
-    .first()
-)
+
+    if faculty is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Faculty not found"
+        )
 
     return faculty
 
@@ -97,7 +110,15 @@ def update_faculty(
     db.commit()
     db.refresh(faculty)
 
-    return faculty
+    return (
+        db.query(Faculty)
+        .options(
+            joinedload(Faculty.department),
+            joinedload(Faculty.room).joinedload(Room.building)
+        )
+        .filter(Faculty.id == faculty.id)
+        .first()
+    )
 
 
 @router.delete("/{faculty_id}")

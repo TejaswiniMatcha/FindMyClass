@@ -24,7 +24,15 @@ def create_section(
     db.commit()
     db.refresh(db_section)
 
-    return db_section
+    return (
+        db.query(Section)
+        .options(
+            joinedload(Section.department),
+            joinedload(Section.room).joinedload(Room.building)
+        )
+        .filter(Section.id == db_section.id)
+        .first()
+    )
 
 
 @router.get("/", response_model=list[SectionResponse])
@@ -53,16 +61,21 @@ def get_section(
 ):
 
     section = (
-    db.query(Section)
-    .options(
-        joinedload(Section.department),
-        joinedload(Section.room).joinedload(Room.building)
+        db.query(Section)
+        .options(
+            joinedload(Section.department),
+            joinedload(Section.room).joinedload(Room.building)
+        )
+        .filter(
+            Section.id == section_id
+        )
+        .first()
     )
-    .filter(
-        Section.id == section_id
-    )
-    .first()
-)
+    if section is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Section not found"
+        )
 
     return section
 
@@ -90,7 +103,15 @@ def update_section(
     db.commit()
     db.refresh(section)
 
-    return section
+    return (
+        db.query(Section)
+        .options(
+            joinedload(Section.department),
+            joinedload(Section.room).joinedload(Room.building)
+        )
+        .filter(Section.id == section.id)
+        .first()
+    )
 
 
 @router.delete("/{section_id}")

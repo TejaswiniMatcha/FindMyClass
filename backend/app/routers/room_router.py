@@ -16,7 +16,14 @@ def create_room(room: RoomCreate, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(db_room)
 
-    return db_room
+    return (
+        db.query(Room)
+        .options(
+            joinedload(Room.building)
+        )
+        .filter(Room.id == db_room.id)
+        .first()
+    )
 
 
 @router.get("/", response_model=list[RoomResponse])
@@ -68,7 +75,14 @@ def update_room(room_id: int, room_data: RoomCreate, db: Session = Depends(get_d
     db.commit()
     db.refresh(room)
 
-    return room
+    return (
+        db.query(Room)
+        .options(
+            joinedload(Room.building)
+        )
+        .filter(Room.id == room.id)
+        .first()
+    )
 
 
 @router.delete("/{room_id}")
