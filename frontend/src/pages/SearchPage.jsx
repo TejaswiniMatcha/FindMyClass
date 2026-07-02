@@ -23,7 +23,7 @@ function SearchPage() {
 
     try {
       const response = await searchCampus(query);
-      let filteredResults = response.data.results || [];
+      let filteredResults = response.results || [];
       
       // Filter by year if selected
       if (year) {

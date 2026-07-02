@@ -5,6 +5,10 @@ from app.database import SessionLocal, Base, engine
 from app.models.building import Building
 from app.models.department import Department
 from app.models.room import Room
+from app.models.section import Section
+from app.models.faculty import Faculty
+from sqlalchemy.orm import Session
+from app.models.room import Room
 
 
 # ==========================================================
@@ -32,6 +36,22 @@ class RoomData(TypedDict):
     room_no: str
     floor: int
     building: str
+
+
+class SectionData(TypedDict):
+    name: str
+    year: str
+    department: str
+    room_no: str
+
+
+class FacultyData(TypedDict):
+    name: str
+    email: str
+    designation: str
+    department: str
+    room_no: str
+
 
 
 # ==========================================================
@@ -188,7 +208,8 @@ DEPARTMENTS: List[DepartmentData] = [
 
 
 ROOMS: List[RoomData] = []
-
+SECTIONS: List[SectionData] = []
+FACULTIES: List[FacultyData] = []
 
 def add_standard_block_rooms(building_name: str) -> None:
     for floor in range(4):
@@ -211,6 +232,98 @@ def add_siemens_freshman_rooms(building_name: str) -> None:
 
 
 
+SECTION_PATTERN = {
+    "CSE": ["A", "B", "C", "D", "E", "F","G", "H", "I", "J", "K", "L", "M", "N", "O", "P"],
+    "CSM": ["A", "B", "C", "D", "E", "F","G", "H", "I", "J", "K", "L", "M", "N", "O", "P"],
+    "AIM": ["A", "B","C","D"],
+    "AID": ["A", "B","C"],
+    "IT": ["A","B", "C", "D"],
+    "CIC": ["A", "B", "C"],
+    "CSO": ["A","B", "C"],
+    "ECE": ["A", "B", "C"],
+    "EEE": ["A", "B", "C"],
+    "MECH": ["A", "B", "C"],
+    "CIVIL": ["A", "B", "C"],
+    "MBA": ["A", "B", "C"],
+}
+
+
+def generate_sections() -> None:
+
+    room_index = 0
+
+    for year in ["1st", "2nd", "3rd", "4th"]:
+
+        for department, section_letters in SECTION_PATTERN.items():
+
+            for letter in section_letters:
+
+                if room_index >= len(ROOMS):
+                    room_index = 0
+
+                room = ROOMS[room_index]
+
+                SECTIONS.append(
+                    {
+                        "name": f"{department}-{letter}",
+                        "year": year,
+                        "department": department,
+                        "room_no": room["room_no"],
+                    }
+                )
+
+                room_index += 1
+
+
+
+FACULTY_COUNT = {
+    "CSE": 18,
+    "ECE": 12,
+    "EEE": 8,
+    "MECH": 7,
+    "CIVIL": 6,
+    "IT": 12,
+    "AIM": 7,
+    "AID": 6,
+    "CSM": 8,
+    "CIC":9,
+    "CSO": 5,
+    "MBA": 6,
+}
+
+
+def generate_faculties() -> None:
+
+    room_index = 0
+
+    designations = [
+        "Assistant Professor",
+        "Associate Professor",
+        "Professor"
+    ]
+
+    for department, count in FACULTY_COUNT.items():
+
+        for number in range(1, count + 1):
+
+            if room_index >= len(ROOMS):
+                room_index = 0
+
+            room = ROOMS[room_index]
+
+            FACULTIES.append(
+                {
+                    "name": f"{department} Faculty {number}",
+                    "email": f"{department.lower()}{number}@vvit.edu.in",
+                    "designation": designations[number % 3],
+                    "department": department,
+                    "room_no": room["room_no"],
+                }
+            )
+
+            room_index += 1
+
+
 add_standard_block_rooms("A Block")
 add_standard_block_rooms("B Block")
 add_standard_block_rooms("C Block")
@@ -218,7 +331,12 @@ add_standard_block_rooms("D Block")
 add_standard_block_rooms("Central Block")
 add_siemens_freshman_rooms("Siemens Block")
 add_siemens_freshman_rooms("Freshman Block")
+generate_sections()
+generate_faculties()
 
+
+
+  
 # ==========================================================
 # DB Helpers (TYPE SAFE)
 # ==========================================================
@@ -255,10 +373,109 @@ def get_or_create_department(db: Session, data: DepartmentData) -> Department:
     return department
 
 
+
+def get_or_create_section(
+    db: Session,
+    data: SectionData
+) -> None:
+
+    department = get_department(
+        db,
+        data["department"]
+    )
+
+    room = get_room_by_number(
+        db,
+        data["room_no"]
+    )
+
+    if department is None or room is None:
+        return
+
+    existing = (
+        db.query(Section)
+        .filter(
+            Section.name == data["name"],
+            Section.year == data["year"],
+            Section.department_id == department.id
+        )
+        .first()
+    )
+
+    if existing:
+        return
+
+    section = Section(
+        name=data["name"],
+        year=data["year"],
+        department_id=department.id,
+        room_id=room.id
+    )
+
+    db.add(section)
+
+
+def get_or_create_faculty(
+    db: Session,
+    data: FacultyData
+) -> None:
+
+    department = get_department(
+        db,
+        data["department"]
+    )
+
+    room = get_room_by_number(
+        db,
+        data["room_no"]
+    )
+
+    if department is None or room is None:
+        return
+
+    existing = (
+        db.query(Faculty)
+        .filter(
+            Faculty.email == data["email"]
+        )
+        .first()
+    )
+
+    if existing:
+        return
+
+    faculty = Faculty(
+        name=data["name"],
+        email=data["email"],
+        designation=data["designation"],
+        department_id=department.id,
+        room_id=room.id,
+    )
+
+    db.add(faculty)
+
+
+
+
 def get_building(db: Session, name: str) -> Optional[Building]:
     return db.query(Building).filter(
         Building.name == name
     ).first()
+
+
+def get_department(
+    db: Session,
+    code: str
+) -> Optional[Department]:
+
+    return (
+        db.query(Department)
+        .filter(
+            Department.code == code
+        )
+        .first()
+    )
+
 
 
 def get_room(
@@ -270,6 +487,20 @@ def get_room(
         Room.room_no == room_no,
         Room.building_id == building_id
     ).first()
+
+
+def get_room_by_number(
+    db: Session,
+    room_no: str
+) -> Optional[Room]:
+
+    return (
+        db.query(Room)
+        .filter(
+            Room.room_no == room_no
+        )
+        .first()
+    )
 
 
 # ==========================================================
@@ -285,9 +516,6 @@ def seed_departments(db: Session) -> None:
     for d in DEPARTMENTS:
         get_or_create_department(db, d)
 
-
-from sqlalchemy.orm import Session
-from app.models.room import Room
 
 
 def seed_rooms(db: Session) -> None:
@@ -315,6 +543,46 @@ def seed_rooms(db: Session) -> None:
     db.commit()
     print("Seeding completed.")
 
+
+
+def seed_sections(
+    db: Session
+) -> None:
+
+    print("Seeding Sections...")
+
+    for section in SECTIONS:
+
+        get_or_create_section(
+            db,
+            section
+        )
+
+    db.commit()
+
+    print(
+        f"✓ {len(SECTIONS)} Sections Added"
+    )
+
+def seed_faculties(
+    db: Session
+) -> None:
+
+    print("Seeding Faculties...")
+
+    for faculty in FACULTIES:
+
+        get_or_create_faculty(
+            db,
+            faculty
+        )
+
+    db.commit()
+
+    print(
+        f"✓ {len(FACULTIES)} Faculties Added"
+    )
+
 # ==========================================================
 # MASTER SEEDER
 # ==========================================================
@@ -328,6 +596,8 @@ def insert_custom_data() -> None:
         seed_buildings(db)
         seed_departments(db)
         seed_rooms(db)
+        seed_sections(db)
+        seed_faculties(db)
 
         print("\n✔ Database seeded successfully")
 

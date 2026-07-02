@@ -1,5 +1,15 @@
 import { Link } from 'react-router-dom';
-import { blocks } from '../data/campusData';
+
+const [blocks, setBlocks] = useState([]);
+useEffect(() => {
+
+    getBuildings()
+        .then(setBlocks)
+        .catch(console.error);
+
+}, []);
+
+
 
 function Home() {
   return (
@@ -56,7 +66,7 @@ function Home() {
                   <div className="block-icon">{block.shortName}</div>
                   <div>
                     <h3>{block.name}</h3>
-                    <p>{block.floors} floors · {block.rooms} rooms</p>
+                    <p>{block.floors} floors · {block.room_count} rooms</p>
                   </div>
                 </div>
               </Link>

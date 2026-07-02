@@ -3,7 +3,16 @@ import { blocks } from '../data/campusData';
 
 function BlockPage() {
   const { slug } = useParams();
-  const block = blocks.find((item) => item.slug === slug);
+  
+
+const [block, setBlock] = useState(null);
+
+useEffect(() => {
+
+    getBuilding(slug)
+        .then(setBlock);
+
+}, [slug]);
 
   if (!block) {
     return (
