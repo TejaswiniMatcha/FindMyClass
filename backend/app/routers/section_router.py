@@ -1,9 +1,10 @@
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 
 from app.dependencies import get_db
 from app.models.section import Section
 from app.schemas.section_schema import SectionCreate, SectionResponse
+from app.models.room import Room
 
 router = APIRouter(
     prefix="/sections",
@@ -27,8 +28,22 @@ def create_section(
 
 
 @router.get("/", response_model=list[SectionResponse])
-def get_sections(db: Session = Depends(get_db)):
-    return db.query(Section).all()
+def get_sections(
+    db: Session = Depends(get_db)
+):
+
+    return (
+        db.query(Section)
+        .options(
+            joinedload(Section.department),
+            joinedload(Section.room).joinedload(Room.building)
+        )
+        .order_by(
+            Section.year,
+            Section.name
+        )
+        .all()
+    )
 
 
 @router.get("/{section_id}", response_model=SectionResponse)
@@ -37,15 +52,17 @@ def get_section(
     db: Session = Depends(get_db)
 ):
 
-    section = db.query(Section).filter(
+    section = (
+    db.query(Section)
+    .options(
+        joinedload(Section.department),
+        joinedload(Section.room).joinedload(Room.building)
+    )
+    .filter(
         Section.id == section_id
-    ).first()
-
-    if section is None:
-        raise HTTPException(
-            status_code=404,
-            detail="Section not found"
-        )
+    )
+    .first()
+)
 
     return section
 

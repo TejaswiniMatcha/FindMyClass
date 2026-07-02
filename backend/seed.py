@@ -1,18 +1,22 @@
 from typing import TypedDict, List, Optional
+
 from sqlalchemy.orm import Session
 
-from app.database import SessionLocal, Base, engine
+from app.database import Base, SessionLocal, engine
+
 from app.models.building import Building
 from app.models.department import Department
 from app.models.room import Room
 from app.models.section import Section
 from app.models.faculty import Faculty
-from sqlalchemy.orm import Session
-from app.models.room import Room
 
 
 # ==========================================================
 # Typed Structures (FIXS PYLANCE ERRORS)
+# ==========================================================
+
+# ==========================================================
+# Typed Structures
 # ==========================================================
 
 class BuildingData(TypedDict):
@@ -248,11 +252,52 @@ SECTION_PATTERN = {
 }
 
 
+
+
+
+
+FACULTY_COUNT = {
+    "CSE": 18,
+    "ECE": 12,
+    "EEE": 8,
+    "MECH": 7,
+    "CIVIL": 6,
+    "IT": 12,
+    "AIM": 7,
+    "AID": 6,
+    "CSM": 8,
+    "CIC":9,
+    "CSO": 5,
+    "MBA": 6,
+}
+
+
+
+
+add_standard_block_rooms("A Block")
+add_standard_block_rooms("B Block")
+add_standard_block_rooms("C Block")
+add_standard_block_rooms("D Block")
+add_standard_block_rooms("Central Block")
+add_siemens_freshman_rooms("Siemens Block")
+add_siemens_freshman_rooms("Freshman Block")
+
+# ==========================================================
+# Generate Sections
+# ==========================================================
+
 def generate_sections() -> None:
 
     room_index = 0
 
-    for year in ["1st", "2nd", "3rd", "4th"]:
+    years = [
+        "1st",
+        "2nd",
+        "3rd",
+        "4th"
+    ]
+
+    for year in years:
 
         for department, section_letters in SECTION_PATTERN.items():
 
@@ -275,36 +320,75 @@ def generate_sections() -> None:
                 room_index += 1
 
 
+# ==========================================================
+# Faculty Name Pool
+# ==========================================================
 
-FACULTY_COUNT = {
-    "CSE": 18,
-    "ECE": 12,
-    "EEE": 8,
-    "MECH": 7,
-    "CIVIL": 6,
-    "IT": 12,
-    "AIM": 7,
-    "AID": 6,
-    "CSM": 8,
-    "CIC":9,
-    "CSO": 5,
-    "MBA": 6,
-}
+FIRST_NAMES = [
+    "Anil",
+    "Priya",
+    "Suresh",
+    "Lakshmi",
+    "Ravi",
+    "Swathi",
+    "Harish",
+    "Kiran",
+    "Aruna",
+    "Bhavani",
+    "Madhavi",
+    "Srinivas",
+    "Naveen",
+    "Deepika",
+    "Rajesh",
+    "Keerthi",
+    "Manoj",
+    "Sunitha",
+    "Venkatesh",
+    "Ramesh",
+]
 
+LAST_NAMES = [
+    "Kumar",
+    "Reddy",
+    "Sharma",
+    "Rao",
+    "Naidu",
+    "Prasad",
+    "Devi",
+    "Varma",
+    "Murthy",
+    "Patel",
+]
+
+
+def build_faculty_name(index: int) -> str:
+
+    first = FIRST_NAMES[index % len(FIRST_NAMES)]
+
+    last = LAST_NAMES[index % len(LAST_NAMES)]
+
+    return f"Dr. {first} {last}"
+
+
+
+# ==========================================================
+# Generate Faculties
+# ==========================================================
 
 def generate_faculties() -> None:
 
     room_index = 0
+    name_index = 0
 
     designations = [
         "Assistant Professor",
         "Associate Professor",
-        "Professor"
+        "Professor",
     ]
 
     for department, count in FACULTY_COUNT.items():
 
-        for number in range(1, count + 1):
+        for number in range(count):
 
             if room_index >= len(ROOMS):
                 room_index = 0
@@ -313,8 +397,8 @@ def generate_faculties() -> None:
 
             FACULTIES.append(
                 {
-                    "name": f"{department} Faculty {number}",
-                    "email": f"{department.lower()}{number}@vvit.edu.in",
+                    "name": build_faculty_name(name_index),
+                    "email": f"{department.lower()}{number+1}@vvit.edu.in",
                     "designation": designations[number % 3],
                     "department": department,
                     "room_no": room["room_no"],
@@ -322,15 +406,8 @@ def generate_faculties() -> None:
             )
 
             room_index += 1
+            name_index += 1
 
-
-add_standard_block_rooms("A Block")
-add_standard_block_rooms("B Block")
-add_standard_block_rooms("C Block")
-add_standard_block_rooms("D Block")
-add_standard_block_rooms("Central Block")
-add_siemens_freshman_rooms("Siemens Block")
-add_siemens_freshman_rooms("Freshman Block")
 generate_sections()
 generate_faculties()
 
@@ -405,14 +482,14 @@ def get_or_create_section(
     if existing:
         return
 
-    section = Section(
-        name=data["name"],
-        year=data["year"],
-        department_id=department.id,
-        room_id=room.id
+    db.add(
+        Section(
+            name=data["name"],
+            year=data["year"],
+            department_id=department.id,
+            room_id=room.id
+        )
     )
-
-    db.add(section)
 
 
 def get_or_create_faculty(
@@ -444,16 +521,15 @@ def get_or_create_faculty(
     if existing:
         return
 
-    faculty = Faculty(
-        name=data["name"],
-        email=data["email"],
-        designation=data["designation"],
-        department_id=department.id,
-        room_id=room.id,
+    db.add(
+        Faculty(
+            name=data["name"],
+            email=data["email"],
+            designation=data["designation"],
+            department_id=department.id,
+            room_id=room.id
+        )
     )
-
-    db.add(faculty)
-
 
 
 
@@ -470,9 +546,7 @@ def get_department(
 
     return (
         db.query(Department)
-        .filter(
-            Department.code == code
-        )
+        .filter(Department.code == code)
         .first()
     )
 
@@ -496,9 +570,7 @@ def get_room_by_number(
 
     return (
         db.query(Room)
-        .filter(
-            Room.room_no == room_no
-        )
+        .filter(Room.room_no == room_no)
         .first()
     )
 
@@ -563,6 +635,8 @@ def seed_sections(
     print(
         f"✓ {len(SECTIONS)} Sections Added"
     )
+
+
 
 def seed_faculties(
     db: Session

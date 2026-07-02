@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 
 from app.dependencies import get_db
 from app.models.building import Building
@@ -51,10 +51,13 @@ def get_buildings(
     db: Session = Depends(get_db)
 ):
     return (
-        db.query(Building)
-        .order_by(Building.name)
-        .all()
+    db.query(Building)
+    .options(
+        joinedload(Building.rooms)
     )
+    .order_by(Building.name)
+    .all()
+)
 
 
 # ---------------------------------------------------------
@@ -67,10 +70,13 @@ def get_building(
 ):
 
     building = (
-        db.query(Building)
-        .filter(Building.slug == slug)
-        .first()
+    db.query(Building)
+    .options(
+        joinedload(Building.rooms)
     )
+    .filter(Building.slug == slug)
+    .first()
+)
 
     if building is None:
         raise HTTPException(

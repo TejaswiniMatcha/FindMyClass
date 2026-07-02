@@ -1,9 +1,10 @@
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 
 from app.dependencies import get_db
 from app.models.faculty import Faculty
 from app.schemas.faculty_schema import FacultyCreate, FacultyResponse
+from app.models.room import Room
 
 router = APIRouter(
     prefix="/faculties",
@@ -37,8 +38,19 @@ def create_faculty(
 
 
 @router.get("/", response_model=list[FacultyResponse])
-def get_faculties(db: Session =Depends(get_db)):
-    return db.query(Faculty).all()
+def get_faculties(
+    db: Session = Depends(get_db)
+):
+
+    return (
+        db.query(Faculty)
+        .options(
+            joinedload(Faculty.department),
+            joinedload(Faculty.room).joinedload(Room.building)
+        )
+        .order_by(Faculty.name)
+        .all()
+    )
 
 
 @router.get("/{faculty_id}", response_model=FacultyResponse)
@@ -47,15 +59,17 @@ def get_faculty(
     db: Session = Depends(get_db)
 ):
 
-    faculty = db.query(Faculty).filter(
+    faculty = (
+    db.query(Faculty)
+    .options(
+        joinedload(Faculty.department),
+        joinedload(Faculty.room).joinedload(Room.building)
+    )
+    .filter(
         Faculty.id == faculty_id
-    ).first()
-
-    if faculty is None:
-        raise HTTPException(
-            status_code=404,
-            detail="Faculty not found"
-        )
+    )
+    .first()
+)
 
     return faculty
 

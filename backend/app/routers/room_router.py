@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 
 from app.dependencies import get_db
 from app.models.room import Room
@@ -20,14 +20,33 @@ def create_room(room: RoomCreate, db: Session = Depends(get_db)):
 
 
 @router.get("/", response_model=list[RoomResponse])
-def get_rooms(db: Session = Depends(get_db)):
-    return db.query(Room).all()
+def get_rooms(
+    db: Session = Depends(get_db)
+):
+
+    return (
+        db.query(Room)
+        .options(
+            joinedload(Room.building)
+        )
+        .order_by(Room.room_no)
+        .all()
+    )
 
 
 @router.get("/{room_id}", response_model=RoomResponse)
 def get_room(room_id: int, db: Session = Depends(get_db)):
 
-    room = db.query(Room).filter(Room.id == room_id).first()
+    room = (
+    db.query(Room)
+    .options(
+        joinedload(Room.building)
+    )
+    .filter(
+        Room.id == room_id
+    )
+    .first()
+)
 
     if not room:
         raise HTTPException(status_code=404, detail="Room not found")
