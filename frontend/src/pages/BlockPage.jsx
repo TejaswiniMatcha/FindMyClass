@@ -1,70 +1,224 @@
-import { Link, useParams } from 'react-router-dom';
-import { blocks } from '../data/campusData';
+import { useEffect, useState } from "react";
+import { Link, useParams } from "react-router-dom";
+
+import { getBuilding } from "../api/buildingApi";
 
 function BlockPage() {
-  const { slug } = useParams();
-  
 
-const [block, setBlock] = useState(null);
+    const { slug } = useParams();
 
-useEffect(() => {
+    const [building, setBuilding] = useState(null);
 
-    getBuilding(slug)
-        .then(setBlock);
+    const [loading, setLoading] = useState(true);
 
-}, [slug]);
+    const [error, setError] = useState("");
 
-  if (!block) {
+    useEffect(() => {
+
+        async function fetchBuilding() {
+
+            try {
+
+                const data = await getBuilding(slug);
+
+                setBuilding(data);
+
+            }
+
+            catch {
+
+                setError("Building not found.");
+
+            }
+
+            finally {
+
+                setLoading(false);
+
+            }
+
+        }
+
+        fetchBuilding();
+
+    }, [slug]);
+
+    if (loading) {
+
+        return (
+
+            <div className="page-shell">
+
+                <h2>Loading building...</h2>
+
+            </div>
+
+        );
+
+    }
+
+    if (error || !building) {
+
+        return (
+
+            <div className="page-shell small-shell">
+
+                <div className="detail-card">
+
+                    <p className="eyebrow">
+
+                        Not Found
+
+                    </p>
+
+                    <h2>
+
+                        {error}
+
+                    </h2>
+
+                    <Link
+                        to="/"
+                        className="back-link"
+                    >
+                        ← Return Home
+                    </Link>
+
+                </div>
+
+            </div>
+
+        );
+
+    }
+
     return (
-      <div className="page-shell small-shell">
-        <div className="detail-card">
-          <p className="eyebrow">Not found</p>
-          <h1>That block is not available yet.</h1>
-          <Link to="/" className="back-link">← Return home</Link>
+
+        <div className="page-shell small-shell">
+
+            <div className="detail-card">
+
+                <Link
+                    to="/"
+                    className="back-link"
+                >
+                    ← Back Home
+                </Link>
+
+                <div className="detail-header">
+
+                    <img
+                        src={`http://127.0.0.1:8000/static/${building.image}`}
+                        alt={building.name}
+                        className="detail-image"
+                    />
+
+                    <div>
+
+                        <p className="eyebrow">
+
+                            Building Profile
+
+                        </p>
+
+                        <h1>
+
+                            {building.name}
+
+                        </h1>
+
+                        <p className="hero-text">
+
+                            {building.description}
+
+                        </p>
+
+                    </div>
+
+                </div>
+
+                <div className="detail-stats">
+
+                    <div>
+
+                        <strong>
+
+                            {building.floors}
+
+                        </strong>
+
+                        <span>
+
+                            Floors
+
+                        </span>
+
+                    </div>
+
+                    <div>
+
+                        <strong>
+
+                            {building.room_count}
+
+                        </strong>
+
+                        <span>
+
+                            Rooms
+
+                        </span>
+
+                    </div>
+
+                    <div>
+
+                        <strong>
+
+                            {building.code}
+
+                        </strong>
+
+                        <span>
+
+                            Block Code
+
+                        </span>
+
+                    </div>
+
+                </div>
+
+                <div className="detail-section">
+
+                    <h2>
+
+                        Highlights
+
+                    </h2>
+
+                    <ul>
+
+                        {building.highlights.map((item) => (
+
+                            <li key={item}>
+
+                                {item}
+
+                            </li>
+
+                        ))}
+
+                    </ul>
+
+                </div>
+
+            </div>
+
         </div>
-      </div>
+
     );
-  }
 
-  return (
-    <div className="page-shell small-shell">
-      <div className="detail-card">
-        <Link to="/" className="back-link">← Back to campus map</Link>
-        <div className="detail-header">
-          <img src={block.image} alt={block.name} className="detail-image" />
-          <div>
-            <p className="eyebrow">Building profile</p>
-            <h1>{block.name}</h1>
-            <p className="hero-text">{block.description}</p>
-          </div>
-        </div>
-
-        <div className="detail-stats">
-          <div>
-            <strong>{block.floors}</strong>
-            <span>Floors</span>
-          </div>
-          <div>
-            <strong>{block.rooms}</strong>
-            <span>Rooms</span>
-          </div>
-          <div>
-            <strong>5 min</strong>
-            <span>Walk from main gate</span>
-          </div>
-        </div>
-
-        <div className="detail-section">
-          <h2>Highlights</h2>
-          <ul>
-            {block.highlights.map((item) => (
-              <li key={item}>{item}</li>
-            ))}
-          </ul>
-        </div>
-      </div>
-    </div>
-  );
 }
 
 export default BlockPage;

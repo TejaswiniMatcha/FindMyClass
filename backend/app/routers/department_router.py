@@ -2,99 +2,127 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from app.dependencies import get_db
-from app.models.room import Room
-from app.schemas.room_schema import RoomCreate, RoomResponse
+from app.models.department import Department
+from app.schemas.department_schema import (
+    DepartmentCreate,
+    DepartmentResponse,
+)
 
 router = APIRouter(
-    prefix="/rooms",
-    tags=["Rooms"]
+    prefix="/departments",
+    tags=["Departments"],
 )
 
 
-@router.post("/", response_model=RoomResponse)
-def create_room(
-    room: RoomCreate,
-    db: Session = Depends(get_db)
+@router.post("/", response_model=DepartmentResponse)
+def create_department(
+    department: DepartmentCreate,
+    db: Session = Depends(get_db),
 ):
 
-    db_room = Room(**room.model_dump())
+    existing = (
+        db.query(Department)
+        .filter(Department.code == department.code)
+        .first()
+    )
 
-    db.add(db_room)
+    if existing:
+        raise HTTPException(
+            status_code=400,
+            detail="Department already exists",
+        )
+
+    db_department = Department(**department.model_dump())
+
+    db.add(db_department)
     db.commit()
-    db.refresh(db_room)
+    db.refresh(db_department)
 
-    return db_room
-
-
-@router.get("/", response_model=list[RoomResponse])
-def get_rooms(db: Session = Depends(get_db)):
-    return db.query(Room).all()
+    return db_department
 
 
-@router.get("/{room_id}", response_model=RoomResponse)
-def get_room(
-    room_id: int,
-    db: Session = Depends(get_db)
+@router.get("/", response_model=list[DepartmentResponse])
+def get_departments(
+    db: Session = Depends(get_db),
 ):
 
-    room = db.query(Room).filter(
-        Room.id == room_id
-    ).first()
-
-    if room is None:
-        raise HTTPException(
-            status_code=404,
-            detail="Room not found"
-        )
-
-    return room
+    return (
+        db.query(Department)
+        .order_by(Department.code)
+        .all()
+    )
 
 
-@router.put("/{room_id}", response_model=RoomResponse)
-def update_room(
-    room_id: int,
-    room_data: RoomCreate,
-    db: Session = Depends(get_db)
+@router.get("/{department_id}", response_model=DepartmentResponse)
+def get_department(
+    department_id: int,
+    db: Session = Depends(get_db),
 ):
 
-    room = db.query(Room).filter(
-        Room.id == room_id
-    ).first()
+    department = (
+        db.query(Department)
+        .filter(Department.id == department_id)
+        .first()
+    )
 
-    if room is None:
+    if department is None:
         raise HTTPException(
             status_code=404,
-            detail="Room not found"
+            detail="Department not found",
         )
 
-    for key, value in room_data.model_dump().items():
-        setattr(room, key, value)
+    return department
+
+
+@router.put("/{department_id}", response_model=DepartmentResponse)
+def update_department(
+    department_id: int,
+    department_data: DepartmentCreate,
+    db: Session = Depends(get_db),
+):
+
+    department = (
+        db.query(Department)
+        .filter(Department.id == department_id)
+        .first()
+    )
+
+    if department is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Department not found",
+        )
+
+    for key, value in department_data.model_dump().items():
+        setattr(department, key, value)
 
     db.commit()
-    db.refresh(room)
+    db.refresh(department)
 
-    return room
+    return department
 
 
-@router.delete("/{room_id}")
-def delete_room(
-    room_id: int,
-    db: Session = Depends(get_db)
+@router.delete("/{department_id}")
+def delete_department(
+    department_id: int,
+    db: Session = Depends(get_db),
 ):
 
-    room = db.query(Room).filter(
-        Room.id == room_id
-    ).first()
+    department = (
+        db.query(Department)
+        .filter(Department.id == department_id)
+        .first()
+    )
 
-    if room is None:
+    if department is None:
         raise HTTPException(
             status_code=404,
-            detail="Room not found"
+            detail="Department not found",
         )
 
-    db.delete(room)
+    db.delete(department)
     db.commit()
 
     return {
-        "message": "Room deleted successfully"
+        "message": "Department deleted successfully"
     }
