@@ -1,10 +1,19 @@
 from contextlib import asynccontextmanager
+from pathlib import Path
+from sys import path as sys_path
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.openapi.docs import get_swagger_ui_html
 from fastapi.responses import HTMLResponse
 
+# Ensure backend/app is importable when running from repo root
+ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys_path:
+    sys_path.insert(0, str(ROOT))
+
+from app.core.config import settings
 from app.database import engine, Base
 
 # Routers
@@ -15,7 +24,6 @@ from app.routers import (
     department_router,
     section_router,
     search_router,
-    
 )
 
 
@@ -42,17 +50,14 @@ app = FastAPI(
 # CORS setup
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://127.0.0.1:5173",
-        "http://localhost:5173"
-    ],
+    allow_origins=settings.cors_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Serve static files (make sure "static" folder exists)
-app.mount("/static", StaticFiles(directory="static"), name="static")
+# Serve static files (make sure the configured static folder exists)
+app.mount("/static", StaticFiles(directory=settings.static_dir), name="static")
 
 
 # Include routers

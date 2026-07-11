@@ -9,3 +9,14 @@ export const searchCampus = async (query) => {
 
     return data.results;
 };
+
+export const searchCampusSuggestions = async (query, limit = 8) => {
+    const { data } = await api.get("/search/suggestions", {
+        params: {
+            q: query,
+            limit,
+        },
+    });
+
+    return data.results;
+};

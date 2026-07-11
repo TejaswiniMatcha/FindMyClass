@@ -1,3 +1,5 @@
+﻿from typing import Optional
+
 from pydantic import BaseModel
 
 
@@ -11,6 +13,8 @@ class BuildingBase(BaseModel):
     image: str
     floors: int
     highlights: list[str]
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
 
 
 class BuildingCreate(BuildingBase):

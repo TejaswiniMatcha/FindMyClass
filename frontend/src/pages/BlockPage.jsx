@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 
 import { getBuilding } from "../api/buildingApi";
+import MapPreview from "../components/MapPreview";
 
 function BlockPage() {
 
@@ -210,6 +211,24 @@ function BlockPage() {
                         ))}
 
                     </ul>
+
+                </div>
+
+                <div className="detail-section">
+
+                    <h2>
+
+                        Navigate
+
+                    </h2>
+
+                    <div className="map-container">
+                        <MapPreview
+                            latitude={building.latitude}
+                            longitude={building.longitude}
+                            name={building.name}
+                        />
+                    </div>
 
                 </div>
 
